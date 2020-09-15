@@ -30,15 +30,9 @@ class CallbackOutput(CollectingOutputChannel):
         await super()._persist_message(message)
 
         try:
-            await self.callback_endpoint.request(
-                "post", content_type="application/json", json=message
-            )
+            await self.callback_endpoint.request("post", content_type="application/json", json=message)
         except ClientResponseError as e:
-            logger.error(
-                "Failed to send output message to callback. "
-                "Status: {} Response: {}"
-                "".format(e.status, e.text)
-            )
+            logger.error("Failed to send output message to callback. Status: {} Response: {}" "".format(e.status, e.text))
 
 
 class CallbackInput(RestInput):
@@ -58,9 +52,7 @@ class CallbackInput(RestInput):
     def __init__(self, endpoint: EndpointConfig) -> None:
         self.callback_endpoint = endpoint
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> Blueprint:
+    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint:
         callback_webhook = Blueprint("callback_webhook", __name__)
 
         @callback_webhook.route("/", methods=["GET"])
@@ -73,9 +65,7 @@ class CallbackInput(RestInput):
             text = self._extract_message(request)
 
             collector = self.get_output_channel()
-            await on_new_message(
-                UserMessage(text, collector, sender_id, input_channel=self.name())
-            )
+            await on_new_message(UserMessage(text, collector, sender_id, input_channel=self.name()))
             return response.text("success")
 
         return callback_webhook

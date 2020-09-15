@@ -206,8 +206,7 @@ class MessengerBot(OutputChannel):
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
             rasa.shared.utils.io.raise_warning(
-                "Facebook API currently allows only up to 3 buttons. "
-                "If you add more, all will be ignored."
+                "Facebook API currently allows only up to 3 buttons. If you add more, all will be ignored."
             )
             await self.send_text_message(recipient_id, text, **kwargs)
         else:
@@ -219,11 +218,7 @@ class MessengerBot(OutputChannel):
             payload = {
                 "attachment": {
                     "type": "template",
-                    "payload": {
-                        "template_type": "button",
-                        "text": text,
-                        "buttons": buttons,
-                    },
+                    "payload": {"template_type": "button", "text": text, "buttons": buttons, },
                 }
             }
             self.messenger_client.send(payload, recipient_id, "RESPONSE")
@@ -281,16 +276,11 @@ class MessengerBot(OutputChannel):
         for quick_reply in quick_replies:
             try:
                 fb_quick_replies.append(
-                    QuickReply(
-                        title=quick_reply["title"],
-                        payload=quick_reply["payload"],
-                        content_type=quick_reply.get("content_type"),
-                    )
+                    QuickReply(title=quick_reply["title"], payload=quick_reply["payload"],
+                               content_type=quick_reply.get("content_type"), )
                 )
             except KeyError as e:
-                raise ValueError(
-                    'Facebook quick replies must define a "{}" field.'.format(e.args[0])
-                )
+                raise ValueError('Facebook quick replies must define a "{}" field.'.format(e.args[0]))
 
         return QuickReplies(quick_replies=fb_quick_replies)
 
@@ -308,11 +298,7 @@ class FacebookInput(InputChannel):
             cls.raise_missing_credentials_exception()
 
         # pytype: disable=attribute-error
-        return cls(
-            credentials.get("verify"),
-            credentials.get("secret"),
-            credentials.get("page-access-token"),
-        )
+        return cls(credentials.get("verify"), credentials.get("secret"), credentials.get("page-access-token"), )
         # pytype: enable=attribute-error
 
     def __init__(self, fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None:
@@ -333,9 +319,7 @@ class FacebookInput(InputChannel):
         self.fb_secret = fb_secret
         self.fb_access_token = fb_access_token
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> Blueprint:
+    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint:
 
         fb_webhook = Blueprint("fb_webhook", __name__)
 
@@ -349,20 +333,14 @@ class FacebookInput(InputChannel):
             if request.args.get("hub.verify_token") == self.fb_verify:
                 return response.text(request.args.get("hub.challenge"))
             else:
-                logger.warning(
-                    "Invalid fb verify token! Make sure this matches "
-                    "your webhook settings on the facebook app."
-                )
+                logger.warning("Invalid fb verify token! Make sure this matches your webhook settings on the facebook app.")
                 return response.text("failure, invalid token")
 
         @fb_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request) -> HTTPResponse:
             signature = request.headers.get("X-Hub-Signature") or ""
             if not self.validate_hub_signature(self.fb_secret, request.body, signature):
-                logger.warning(
-                    "Wrong fb secret! Make sure this matches the "
-                    "secret in your facebook app settings"
-                )
+                logger.warning("Wrong fb secret! Make sure this matches the secret in your facebook app settings")
                 return response.text("not validated")
 
             messenger = Messenger(self.fb_access_token, on_new_message)
@@ -374,9 +352,7 @@ class FacebookInput(InputChannel):
         return fb_webhook
 
     @staticmethod
-    def validate_hub_signature(
-        app_secret, request_payload, hub_signature_header
-    ) -> bool:
+    def validate_hub_signature(app_secret, request_payload, hub_signature_header) -> bool:
         """Make sure the incoming webhook requests are properly signed.
 
         Args:
@@ -395,9 +371,7 @@ class FacebookInput(InputChannel):
             pass
         else:
             digest_module = getattr(hashlib, hash_method)
-            hmac_object = hmac.new(
-                bytearray(app_secret, "utf8"), request_payload, digest_module
-            )
+            hmac_object = hmac.new(bytearray(app_secret, "utf8"), request_payload, digest_module)
             generated_hash = hmac_object.hexdigest()
             if hub_signature == generated_hash:
                 return True

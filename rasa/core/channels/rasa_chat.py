@@ -41,14 +41,11 @@ class RasaChatInput(RestInput):
     async def _fetch_public_key(self) -> None:
         public_key_url = f"{self.base_url}/version"
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                public_key_url, timeout=DEFAULT_REQUEST_TIMEOUT
-            ) as resp:
+            async with session.get(public_key_url, timeout=DEFAULT_REQUEST_TIMEOUT) as resp:
                 status_code = resp.status
                 if status_code != 200:
                     logger.error(
-                        "Failed to fetch JWT public key from URL '{}' with "
-                        "status code {}: {}"
+                        "Failed to fetch JWT public key from URL '{}' with status code {}: {}"
                         "".format(public_key_url, status_code, await resp.text())
                     )
                     return
@@ -71,12 +68,8 @@ class RasaChatInput(RestInput):
                     )
 
     def _decode_jwt(self, bearer_token: Text) -> Dict:
-        authorization_header_value = bearer_token.replace(
-            constants.BEARER_TOKEN_PREFIX, ""
-        )
-        return jwt.decode(
-            authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm
-        )
+        authorization_header_value = bearer_token.replace(constants.BEARER_TOKEN_PREFIX, "")
+        return jwt.decode(authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm)
 
     async def _decode_bearer_token(self, bearer_token: Text) -> Optional[Dict]:
         if self.jwt_key is None:
@@ -113,18 +106,14 @@ class RasaChatInput(RestInput):
             else:
                 logger.error(
                     "User '{}' does not have permissions to send messages to "
-                    "conversation '{}'.".format(
-                        jwt_payload[JWT_USERNAME_KEY], req.json[CONVERSATION_ID_KEY]
-                    )
+                    "conversation '{}'.".format(jwt_payload[JWT_USERNAME_KEY], req.json[CONVERSATION_ID_KEY])
                 )
                 abort(401)
 
         return jwt_payload[JWT_USERNAME_KEY]
 
     @staticmethod
-    def _has_user_permission_to_send_messages_to_conversation(
-        jwt_payload: Dict, message: Dict
-    ) -> bool:
+    def _has_user_permission_to_send_messages_to_conversation(jwt_payload: Dict, message: Dict) -> bool:
         user_scopes = jwt_payload.get("scopes", [])
         return INTERACTIVE_LEARNING_PERMISSION in user_scopes or message[
             CONVERSATION_ID_KEY

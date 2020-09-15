@@ -68,10 +68,7 @@ class BotFramework(OutputChannel):
                 delta = datetime.timedelta(seconds=int(token_expiration))
                 BotFramework.token_expiration_date = datetime.datetime.now() + delta
 
-                BotFramework.headers = {
-                    "content-type": "application/json",
-                    "Authorization": "Bearer %s" % access_token,
-                }
+                BotFramework.headers = {"content-type": "application/json", "Authorization": "Bearer %s" % access_token, }
                 return BotFramework.headers
             else:
                 logger.error("Could not get BotFramework token")

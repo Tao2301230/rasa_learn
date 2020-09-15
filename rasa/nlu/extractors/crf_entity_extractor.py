@@ -35,16 +35,8 @@ if typing.TYPE_CHECKING:
 
 
 class CRFToken:
-    def __init__(
-        self,
-        text: Text,
-        pos_tag: Text,
-        pattern: Dict[Text, Any],
-        dense_features: np.ndarray,
-        entity_tag: Text,
-        entity_role_tag: Text,
-        entity_group_tag: Text,
-    ):
+    def __init__(self, text: Text, pos_tag: Text, pattern: Dict[Text, Any], dense_features: np.ndarray,
+                 entity_tag: Text, entity_role_tag: Text, entity_group_tag: Text, ):
         self.text = text
         self.pos_tag = pos_tag
         self.pattern = pattern
@@ -72,19 +64,7 @@ class CRFEntityExtractor(EntityExtractor):
         # pattern feature require RegexFeaturizer
         "features": [
             ["low", "title", "upper"],
-            [
-                "low",
-                "bias",
-                "prefix5",
-                "prefix2",
-                "suffix5",
-                "suffix3",
-                "suffix2",
-                "upper",
-                "title",
-                "digit",
-                "pattern",
-            ],
+            ["low", "bias", "prefix5", "prefix2", "suffix5", "suffix3", "suffix2", "upper", "title", "digit", "pattern", ],
             ["low", "title", "upper"],
         ],
         # The maximum number of iterations for optimization algorithms.
@@ -147,19 +127,11 @@ class CRFEntityExtractor(EntityExtractor):
     def required_packages(cls) -> List[Text]:
         return ["sklearn_crfsuite", "sklearn"]
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    def train(self, training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ) -> None:
         # checks whether there is at least one
         # example with an entity annotation
         if not training_data.entity_examples:
-            logger.debug(
-                "No training examples with entities present. Skip training"
-                "of 'CRFEntityExtractor'."
-            )
+            logger.debug("No training examples with entities present. Skip training of 'CRFEntityExtractor'.")
             return
 
         self.check_correct_entity_annotations(training_data)
@@ -171,9 +143,7 @@ class CRFEntityExtractor(EntityExtractor):
         self._update_crf_order(training_data)
 
         # filter out pre-trained entity examples
-        entity_examples = self.filter_trainable_entities(
-            training_data.training_examples
-        )
+        entity_examples = self.filter_trainable_entities(training_data.training_examples)
 
         dataset = [self._convert_to_crf_tokens(example) for example in entity_examples]
 
@@ -220,24 +190,16 @@ class CRFEntityExtractor(EntityExtractor):
         # convert predictions into a list of tags and a list of confidences
         tags, confidences = self._tag_confidences(tokens, predictions)
 
-        return self.convert_predictions_into_entities(
-            message.get(TEXT), tokens, tags, confidences
-        )
+        return self.convert_predictions_into_entities(message.get(TEXT), tokens, tags, confidences)
 
-    def _add_tag_to_crf_token(
-        self,
-        crf_tokens: List[CRFToken],
-        predictions: Dict[Text, List[Dict[Text, float]]],
-    ):
+    def _add_tag_to_crf_token(self, crf_tokens: List[CRFToken], predictions: Dict[Text, List[Dict[Text, float]]], ):
         """Add predicted entity tags to CRF tokens."""
         if ENTITY_ATTRIBUTE_TYPE in predictions:
             _tags, _ = self._most_likely_tag(predictions[ENTITY_ATTRIBUTE_TYPE])
             for tag, token in zip(_tags, crf_tokens):
                 token.entity_tag = tag
 
-    def _most_likely_tag(
-        self, predictions: List[Dict[Text, float]]
-    ) -> Tuple[List[Text], List[float]]:
+    def _most_likely_tag(self, predictions: List[Dict[Text, float]] ) -> Tuple[List[Text], List[float]]:
         """Get the entity tags with the highest confidence.
 
         Args:
@@ -257,12 +219,8 @@ class CRFEntityExtractor(EntityExtractor):
                 # if we are using BILOU flags, we will sum up the prob
                 # of the B, I, L and U tags for an entity
                 _confidences.append(
-                    sum(
-                        _confidence
-                        for _tag, _confidence in token_predictions.items()
-                        if bilou_utils.tag_without_prefix(tag)
-                        == bilou_utils.tag_without_prefix(_tag)
-                    )
+                    sum(_confidence for _tag, _confidence in token_predictions.items()
+                        if bilou_utils.tag_without_prefix(tag) == bilou_utils.tag_without_prefix(_tag))
                 )
             else:
                 _confidences.append(token_predictions[tag])
@@ -293,14 +251,8 @@ class CRFEntityExtractor(EntityExtractor):
         return tags, confidences
 
     @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Text = None,
-        model_metadata: Metadata = None,
-        cached_component: Optional["CRFEntityExtractor"] = None,
-        **kwargs: Any,
-    ) -> "CRFEntityExtractor":
+    def load(cls, meta: Dict[Text, Any], model_dir: Text = None, model_metadata: Metadata = None,
+             cached_component: Optional["CRFEntityExtractor"] = None, **kwargs: Any, ) -> "CRFEntityExtractor":
         import joblib
 
         file_names = meta.get("files")
@@ -330,7 +282,6 @@ class CRFEntityExtractor(EntityExtractor):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-
         Returns the metadata necessary to load the model again."""
 
         import joblib
@@ -346,9 +297,8 @@ class CRFEntityExtractor(EntityExtractor):
 
         return {"files": file_names}
 
-    def _crf_tokens_to_features(
-        self, crf_tokens: List[CRFToken], include_tag_features: bool = False
-    ) -> List[Dict[Text, Any]]:
+    def _crf_tokens_to_features(self, crf_tokens: List[CRFToken], include_tag_features: bool = False
+                                ) -> List[Dict[Text, Any]]:
         """Convert the list of tokens into discrete features."""
 
         configured_features = self.component_config["features"]
@@ -362,26 +312,15 @@ class CRFEntityExtractor(EntityExtractor):
             half_window_size = window_size // 2
             window_range = range(-half_window_size, half_window_size + 1)
 
-            token_features = self._create_features_for_token(
-                crf_tokens,
-                token_idx,
-                half_window_size,
-                window_range,
-                include_tag_features,
-            )
+            token_features = self._create_features_for_token(crf_tokens, token_idx, half_window_size, window_range,
+                                                             include_tag_features, )
 
             sentence_features.append(token_features)
 
         return sentence_features
 
-    def _create_features_for_token(
-        self,
-        crf_tokens: List[CRFToken],
-        token_idx: int,
-        half_window_size: int,
-        window_range: range,
-        include_tag_features: bool,
-    ):
+    def _create_features_for_token(self, crf_tokens: List[CRFToken], token_idx: int, half_window_size: int,
+                                   window_range: range, include_tag_features: bool, ):
         """Convert a token into discrete features including word before and word
         after."""
 
@@ -427,9 +366,7 @@ class CRFEntityExtractor(EntityExtractor):
                         # pattern or not
                         regex_patterns = self.function_dict[feature](token)
                         for pattern_name, matched in regex_patterns.items():
-                            token_features[
-                                f"{prefix}:{feature}:{pattern_name}"
-                            ] = matched
+                            token_features[f"{prefix}:{feature}:{pattern_name}"] = matched
                     else:
                         value = self.function_dict[feature](token)
                         token_features[f"{prefix}:{feature}"] = value
@@ -468,9 +405,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
-        features, _ = message.get_dense_features(
-            TEXT, self.component_config["featurizers"]
-        )
+        features, _ = message.get_dense_features(TEXT, self.component_config["featurizers"])
 
         if features is None:
             return None
@@ -487,10 +422,7 @@ class CRFEntityExtractor(EntityExtractor):
         # convert to python-crfsuite feature format
         features_out = []
         for feature in features.features:
-            feature_dict = {
-                str(index): token_features
-                for index, token_features in enumerate(feature)
-            }
+            feature_dict = {str(index): token_features for index, token_features in enumerate(feature)}
             converted = {"text_dense_features": feature_dict}
             features_out.append(converted)
 
@@ -516,15 +448,8 @@ class CRFEntityExtractor(EntityExtractor):
             )
 
             crf_format.append(
-                CRFToken(
-                    text=token.text,
-                    pos_tag=pos_tag,
-                    entity_tag=entity,
-                    entity_group_tag=group,
-                    entity_role_tag=role,
-                    pattern=pattern,
-                    dense_features=dense_features,
-                )
+                CRFToken(text=token.text, pos_tag=pos_tag, entity_tag=entity, entity_group_tag=group,
+                         entity_role_tag=role, pattern=pattern, dense_features=dense_features, )
             )
 
         return crf_format
@@ -542,12 +467,7 @@ class CRFEntityExtractor(EntityExtractor):
                 else:
                     _tags = [NO_ENTITY_TAG for _ in tokens]
             else:
-                _tags = [
-                    determine_token_labels(
-                        token, message.get(ENTITIES), attribute_key=tag_name
-                    )
-                    for token in tokens
-                ]
+                _tags = [determine_token_labels(token, message.get(ENTITIES), attribute_key=tag_name) for token in tokens]
             tags[tag_name] = _tags
 
         return tags
@@ -563,13 +483,8 @@ class CRFEntityExtractor(EntityExtractor):
 
             # add entity tag features for second level CRFs
             include_tag_features = tag_name != ENTITY_ATTRIBUTE_TYPE
-            X_train = [
-                self._crf_tokens_to_features(sentence, include_tag_features)
-                for sentence in df_train
-            ]
-            y_train = [
-                self._crf_tokens_to_tags(sentence, tag_name) for sentence in df_train
-            ]
+            X_train = [self._crf_tokens_to_features(sentence, include_tag_features)for sentence in df_train]
+            y_train = [self._crf_tokens_to_tags(sentence, tag_name) for sentence in df_train]
 
             entity_tagger = sklearn_crfsuite.CRF(
                 algorithm="lbfgs",
